@@ -1,11 +1,17 @@
-from unittest.mock import Mock, AsyncMock
+from unittest.mock import AsyncMock, Mock
+
 from src.services.events_provider_client import EventsProviderClient
 
 
 async def test_get_events_calls_client_with_correct_params():
     fake_response = Mock()
     fake_response.json.return_value = {
-        "results": [{"id": "550e8400-e29b-41d4-a716-446655440000", "name": "Конференция по Python"}],
+        "results": [
+            {
+                "id": "550e8400-e29b-41d4-a716-446655440000",
+                "name": "Конференция по Python",
+            }
+        ],
         "next": None,
     }
 
@@ -21,4 +27,3 @@ async def test_get_events_calls_client_with_correct_params():
         params={"changed_at": "2000-01-01"},
     )
     assert result == fake_response.json.return_value
-
