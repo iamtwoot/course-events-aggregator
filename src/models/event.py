@@ -1,10 +1,11 @@
 import uuid
-from datetime import datetime, timezone
+from datetime import datetime
 
 from sqlalchemy import DateTime, Integer, String, Uuid
 from sqlalchemy.orm import Mapped, mapped_column
 
 from src.database import Base
+from src.timezone import MSK
 
 
 class Event(Base):
@@ -32,6 +33,6 @@ class SyncMeta(Base):
     id: Mapped[int] = mapped_column(Integer, primary_key=True, default=1)
     last_sync_time: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
     last_changed_at: Mapped[datetime] = mapped_column(
-        DateTime(timezone=True), default=datetime(2000, 1, 1, tzinfo=timezone.utc)
+        DateTime(timezone=True), default=datetime(2000, 1, 1, tzinfo=MSK)
     )
     sync_status: Mapped[str] = mapped_column(String, default="never_run")

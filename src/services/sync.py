@@ -1,9 +1,10 @@
-from datetime import datetime, timezone
+from datetime import datetime
 
 from ..database import async_session_factory
 from ..models.event import Event
 from ..repositories.event import EventRepository
 from ..repositories.sync_meta import SyncMetaRepository
+from ..timezone import MSK
 from .events_paginator import EventsPaginator
 from .events_provider_client import EventsProviderClient
 from .events_provider_schemas import ProviderEvent
@@ -30,10 +31,10 @@ async def sync_events(client: EventsProviderClient):
             if raw_changed_at > latest_changed_at:
                 latest_changed_at = raw_changed_at
 
-            await sync_meta_repo.update(
-                last_changed_at=latest_changed_at,
-                last_sync_time=datetime.now(timezone.utc),
-                sync_status="ok",
-            )
+        await sync_meta_repo.update(
+            last_changed_at=latest_changed_at,
+            last_sync_time=datetime.now(MSK),
+            sync_status="ok",
+        )
 
-            await session.commit()
+        await session.commit()
