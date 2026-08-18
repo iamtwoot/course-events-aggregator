@@ -9,6 +9,7 @@ from .config import settings
 from .database import engine
 from .services.events_provider_client import EventsProviderClient
 from .services.sync import sync_events
+from .api.events import router as events_router
 
 
 async def sync_loop(client: EventsProviderClient):
@@ -43,6 +44,7 @@ async def lifespan(app: FastAPI):
 
 
 app = FastAPI(title="Events Aggregator", lifespan=lifespan)
+app.include_router(events_router)
 
 
 @app.get("/api/health")
