@@ -16,9 +16,9 @@ router = APIRouter()
 
 @router.get("/api/events/{event_id}/seats")
 async def list_free_seats(
-        event_id: uuid.UUID,
-        session: AsyncSession = Depends(get_db),
-        client: EventsProviderClient = Depends(get_events_provider_client),
+    event_id: uuid.UUID,
+    session: AsyncSession = Depends(get_db),
+    client: EventsProviderClient = Depends(get_events_provider_client),
 ) -> SeatsOut:
     repo = EventRepository(session)
     event = await repo.get(event_id)
