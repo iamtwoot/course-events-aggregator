@@ -1,3 +1,5 @@
+import pytest
+import httpx
 from unittest.mock import AsyncMock, Mock
 
 from src.services.events_provider_client import EventsProviderClient
@@ -27,3 +29,20 @@ async def test_get_events_calls_client_with_correct_params():
         params={"changed_at": "2000-01-01"},
     )
     assert result == fake_response.json.return_value
+
+
+async def test_get_events_raises_when_response_has_error_status():
+    fake_response = Mock()
+    fake_response.raise_for_status.side_effect = httpx.HTTPStatusError(
+        "401 Unauthorized",
+        request=Mock(),
+        response=fake_response,
+    )
+
+    fake_client = AsyncMock()
+    fake_client.get.return_value = fake_response
+
+    client = EventsProviderClient(fake_client)
+
+    with pytest.raises(httpx.HTTPStatusError):
+        await client.get_events("2000-01-01")
