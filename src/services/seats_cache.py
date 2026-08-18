@@ -9,7 +9,7 @@ class SeatsCache:
     def get(self, event_id: str) -> list[str] | None:
         entry = self._store.get(event_id)
 
-        if entry in None:
+        if entry is None:
             return None
 
         cached_at, seats = entry
