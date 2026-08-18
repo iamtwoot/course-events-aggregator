@@ -26,3 +26,11 @@ class PaginatedEventsResponse(BaseModel):
     next: str | None = Field(..., description="Next page of events")
     previous: str | None = Field(..., description="Previous page of events")
     results: list[EventOut] = Field(..., description="Results")
+
+
+class PlaceDetailOut(PlaceOut):
+    seats_pattern: str | None = Field(default=None, description="Seats pattern")
+
+
+class EventDetailOut(EventOut):
+    place: PlaceDetailOut

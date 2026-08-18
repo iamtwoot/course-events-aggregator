@@ -1,12 +1,14 @@
+import uuid
 from datetime import date
 
-from fastapi import APIRouter, Depends, Query, Request
+from fastapi import APIRouter, Depends, Query, Request, HTTPException
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from src.database import get_db
 from src.models.event import Event
 from src.repositories.event import EventRepository
-from src.schemas.event import EventOut, PaginatedEventsResponse, PlaceOut
+from src.schemas.event import (EventOut, PaginatedEventsResponse, PlaceOut,
+                               EventDetailOut, PlaceDetailOut)
 
 router = APIRouter()
 
@@ -49,3 +51,32 @@ async def list_events(
         previous=previous_url,
         results=[_to_event_out(event) for event in events],
     )
+
+
+def _to_event_detail_out(event: Event) -> EventDetailOut:
+    return EventDetailOut(
+        id=event.id,
+        name=event.name,
+        place=PlaceDetailOut(
+            id=event.place_id,
+            name=event.place_name,
+            city=event.place_city,
+            address=event.place_address,
+            seats_pattern=event.place_seats_pattern,
+        ),
+        event_time=event.event_time,
+        registration_deadline=event.registration_deadline,
+        status=event.status,
+        number_of_visitors=event.number_of_visitors,
+    )
+
+
+@router.get("/api/events/{event_id}")
+async def get_event(event_id: uuid.UUID, session: AsyncSession = Depends(get_db)):
+    repo = EventRepository(session)
+    event = await repo.get(event_id)
+
+    if event is None:
+        raise HTTPException(status_code=404, detail="Event not found")
+
+    return _to_event_detail_out(event)
