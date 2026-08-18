@@ -15,13 +15,13 @@ class EventRepository:
         await self._session.merge(event)
 
     async def list(
-            self,
-            *,
-            date_from: date | None,
-            page: int,
-            page_size: int,
+        self,
+        *,
+        date_from: date | None,
+        page: int,
+        page_size: int,
     ) -> tuple[list[Event], int]:
-        query = (select(Event).order_by(Event.event_time))
+        query = select(Event).order_by(Event.event_time)
         count_query = select(func.count()).select_from(Event)
 
         if date_from is not None:

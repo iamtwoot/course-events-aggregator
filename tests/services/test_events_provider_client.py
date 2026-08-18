@@ -1,6 +1,7 @@
-import pytest
-import httpx
 from unittest.mock import AsyncMock, Mock
+
+import httpx
+import pytest
 
 from src.services.events_provider_client import EventsProviderClient
 

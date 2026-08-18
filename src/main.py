@@ -5,11 +5,11 @@ import httpx
 from fastapi import FastAPI, Request
 from sqlalchemy import text
 
+from .api.events import router as events_router
 from .config import settings
 from .database import engine
 from .services.events_provider_client import EventsProviderClient
 from .services.sync import sync_events
-from .api.events import router as events_router
 
 
 async def sync_loop(client: EventsProviderClient):
