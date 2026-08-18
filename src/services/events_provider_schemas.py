@@ -1,10 +1,10 @@
 from datetime import datetime
 from uuid import UUID
 
-import pydantic
+from pydantic import BaseModel
 
 
-class ProviderPlace(pydantic.BaseModel):
+class ProviderPlace(BaseModel):
     id: UUID
     name: str
     city: str
@@ -12,7 +12,7 @@ class ProviderPlace(pydantic.BaseModel):
     seats_pattern: str | None
 
 
-class ProviderEvent(pydantic.BaseModel):
+class ProviderEvent(BaseModel):
     id: UUID
     name: str
     place: ProviderPlace
