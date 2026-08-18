@@ -20,3 +20,6 @@ class SeatsCache:
 
     def set(self, event_id: str, seats: list[str]) -> None:
         self._store[event_id] = (time.monotonic(), seats)
+
+
+seats_cache = SeatsCache()
