@@ -2,6 +2,8 @@ import uuid
 
 import httpx
 
+from src.schemas.ticket import TicketRegistration
+
 
 class EventsProviderClient:
     def __init__(self, http_client: httpx.AsyncClient):
@@ -25,3 +27,20 @@ class EventsProviderClient:
         )
         response.raise_for_status()
         return response.json()
+
+    async def register(
+        self,
+        event_id: uuid.UUID,
+        payload: TicketRegistration,
+    ) -> uuid.UUID:
+        response = await self._client.post(
+            f"/api/events/{event_id}/register/",
+            json={
+                "first_name": payload.first_name,
+                "last_name": payload.last_name,
+                "seat": payload.seat,
+                "email": payload.email,
+            },
+        )
+        response.raise_for_status()
+        return uuid.UUID(response.json()["ticket_id"])
