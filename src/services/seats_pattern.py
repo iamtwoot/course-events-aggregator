@@ -16,7 +16,11 @@ def is_valid_seat(seats_pattern: str, seat: str) -> bool:
         if not range_match:
             continue
 
-        section, start, end = range_match.group(1), int(range_match.group(2)), int(range_match.group(3))
+        section, start, end = (
+            range_match.group(1),
+            int(range_match.group(2)),
+            int(range_match.group(3)),
+        )
         if section == seat_section and start <= seat_number <= end:
             return True
 

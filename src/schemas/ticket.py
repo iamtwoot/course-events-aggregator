@@ -1,6 +1,6 @@
 import uuid
 
-from pydantic import BaseModel, Field, EmailStr
+from pydantic import BaseModel, EmailStr, Field
 
 
 class TicketRegistration(BaseModel):
@@ -9,7 +9,6 @@ class TicketRegistration(BaseModel):
     last_name: str = Field(..., description="Last name")
     email: EmailStr = Field(..., description="Email")
     seat: str = Field(..., description="Seat number")
-
 
 
 class TicketOut(BaseModel):
