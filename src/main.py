@@ -52,11 +52,11 @@ app.include_router(tickets_router)
 
 
 @app.get("/api/health")
-async def health() -> dict[str, bool]:
-    return {"ok": True}
+async def health() -> dict:
+    return {"status": "ok"}
 
 
 @app.post("/api/sync/trigger")
 async def trigger_sync(request: Request):
     await sync_events(request.app.state.events_provider_client)
-    return {"ok": True}
+    return {"status": "ok"}
