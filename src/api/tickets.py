@@ -66,7 +66,15 @@ async def register_ticket(
         ticket_id = await client.register(event.id, payload)
     except httpx.HTTPStatusError as e:
         if e.response.status_code == 400:
-            raise HTTPException(status_code=400, detail="Seat is already taken") from e
+            try:
+                body = e.response.json()
+            except ValueError:
+                provider_detail = e.response.text
+            else:
+                provider_detail = (
+                    body.get("detail", body) if isinstance(body, dict) else body
+                )
+            raise HTTPException(status_code=400, detail=provider_detail) from e
         raise
 
     available_seats.remove(payload.seat)
