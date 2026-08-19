@@ -1,5 +1,5 @@
 import uuid
-from datetime import date
+from datetime import date, datetime
 
 from fastapi import APIRouter, Depends, HTTPException, Query, Request
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -39,7 +39,7 @@ def _to_event_out(event: Event) -> EventOut:
 async def list_events(
     request: Request,
     session: AsyncSession = Depends(get_db),
-    date_from: date | None = None,
+    date_from: date | None = Query(default=datetime.date(2000, 1, 1)),
     page: int = Query(default=1, ge=1),
     page_size: int = Query(default=20, ge=1, le=100),
 ) -> PaginatedEventsResponse:
