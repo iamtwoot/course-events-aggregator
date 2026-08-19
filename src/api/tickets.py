@@ -86,7 +86,7 @@ async def register_ticket(
     ticket_repo = TicketRepository(session)
     for attempt in range(1, LOCAL_SAVE_MAX_ATTEMPTS + 1):
         try:
-            await ticket_repo.create(ticket_id=ticket_id, event_id=event.id)
+            await ticket_repo.create(ticket_id=ticket_id, event_id=payload.event_id)
             await session.commit()
             break
         except DBAPIError:
