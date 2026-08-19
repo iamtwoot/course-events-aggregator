@@ -9,6 +9,7 @@ from sqlalchemy.ext.asyncio import async_engine_from_config
 from src.config import settings
 from src.database import Base
 from src.models.event import Event, SyncMeta  # noqa: F401
+from src.models.ticket import Ticket  # noqa: F401
 
 # this is the Alembic Config object, which provides
 # access to the values within the .ini file in use.
