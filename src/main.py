@@ -7,6 +7,7 @@ from sqlalchemy import text
 
 from .api.events import router as events_router
 from .api.seats import router as seats_router
+from .api.tickets import router as tickets_router
 from .config import settings
 from .database import engine
 from .services.events_provider_client import EventsProviderClient
@@ -47,6 +48,7 @@ async def lifespan(app: FastAPI):
 app = FastAPI(title="Events Aggregator", lifespan=lifespan)
 app.include_router(events_router)
 app.include_router(seats_router)
+app.include_router(tickets_router)
 
 
 @app.get("/api/health")
