@@ -1,6 +1,6 @@
 import asyncio
 import uuid
-from datetime import datetime
+from datetime import datetime, timezone
 
 import httpx
 from fastapi import APIRouter, Depends, HTTPException
@@ -15,7 +15,6 @@ from src.schemas.ticket import TicketCancelOut, TicketOut, TicketRegistration
 from src.services.events_provider_client import EventsProviderClient
 from src.services.seats_cache import seats_cache
 from src.services.seats_pattern import is_valid_seat
-from src.timezone import MSK
 
 router = APIRouter()
 
@@ -38,7 +37,7 @@ async def register_ticket(
     if event.status != "published":
         raise HTTPException(status_code=400, detail="Event is not published")
 
-    if event.registration_deadline < datetime.now(MSK):
+    if event.registration_deadline < datetime.now(timezone.utc):
         raise HTTPException(status_code=400, detail="Registration is closed")
 
     if event.place_seats_pattern is None or not is_valid_seat(
