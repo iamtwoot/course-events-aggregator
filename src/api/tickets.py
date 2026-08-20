@@ -1,4 +1,5 @@
 import asyncio
+import uuid
 from datetime import datetime
 
 import httpx
@@ -10,7 +11,7 @@ from src.api.dependencies import get_events_provider_client
 from src.database import get_db
 from src.repositories.event import EventRepository
 from src.repositories.ticket import TicketRepository
-from src.schemas.ticket import TicketOut, TicketRegistration
+from src.schemas.ticket import TicketCancelOut, TicketOut, TicketRegistration
 from src.services.events_provider_client import EventsProviderClient
 from src.services.seats_cache import seats_cache
 from src.services.seats_pattern import is_valid_seat
@@ -96,3 +97,43 @@ async def register_ticket(
             await asyncio.sleep(LOCAL_SAVE_RETRY_DELAY_SECONDS * attempt)
 
     return TicketOut(ticket_id=ticket_id)
+
+
+@router.delete("/api/tickets/{ticket_id}")
+async def unregister_ticket(
+    ticket_id: uuid.UUID,
+    session: AsyncSession = Depends(get_db),
+    client: EventsProviderClient = Depends(get_events_provider_client),
+):
+    ticket_repo = TicketRepository(session)
+    ticket = await ticket_repo.get_by_ticket_id(ticket_id)
+
+    if ticket is None:
+        raise HTTPException(status_code=404, detail="Ticket not found")
+
+    event_id = ticket.event_id
+
+    try:
+        await client.unregister(event_id, ticket_id)
+    except httpx.HTTPStatusError as e:
+        if e.response.status_code == 404:
+            raise HTTPException(status_code=404, detail="Registration not found") from e
+        raise
+
+    # The provider has already cancelled the registration at this point, so a
+    # failure to delete it locally must not be given up on immediately - retry
+    # a few times before losing sync with the provider's state.
+    for attempt in range(1, LOCAL_SAVE_MAX_ATTEMPTS + 1):
+        try:
+            await ticket_repo.delete_by_ticket_id(ticket_id)
+            await session.commit()
+            break
+        except DBAPIError:
+            await session.rollback()
+            if attempt == LOCAL_SAVE_MAX_ATTEMPTS:
+                raise
+            await asyncio.sleep(LOCAL_SAVE_RETRY_DELAY_SECONDS * attempt)
+
+    seats_cache.invalidate(str(event_id))
+
+    return TicketCancelOut(success=True)

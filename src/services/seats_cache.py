@@ -21,5 +21,8 @@ class SeatsCache:
     def set(self, event_id: str, seats: list[str]) -> None:
         self._store[event_id] = (time.monotonic(), seats)
 
+    def invalidate(self, event_id: str) -> None:
+        self._store.pop(event_id, None)
+
 
 seats_cache = SeatsCache()

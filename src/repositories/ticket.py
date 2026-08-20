@@ -1,5 +1,6 @@
 import uuid
 
+from sqlalchemy import delete
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from src.models.ticket import Ticket
@@ -11,3 +12,9 @@ class TicketRepository:
 
     async def create(self, ticket_id: uuid.UUID, event_id: uuid.UUID):
         self._session.add(Ticket(event_id=event_id, ticket_id=ticket_id))
+
+    async def get_by_ticket_id(self, ticket_id: uuid.UUID) -> Ticket | None:
+        return await self._session.get(Ticket, ticket_id)
+
+    async def delete_by_ticket_id(self, ticket_id: uuid.UUID) -> None:
+        await self._session.execute(delete(Ticket).where(Ticket.ticket_id == ticket_id))

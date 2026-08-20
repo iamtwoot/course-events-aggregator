@@ -44,3 +44,18 @@ class EventsProviderClient:
         )
         response.raise_for_status()
         return uuid.UUID(response.json()["ticket_id"])
+
+    async def unregister(
+        self,
+        event_id: uuid.UUID,
+        ticket_id: uuid.UUID,
+    ):
+        response = await self._client.request(
+            "DELETE",
+            f"/api/events/{event_id}/unregister/",
+            json={
+                "ticket_id": str(ticket_id),
+            },
+        )
+        response.raise_for_status()
+        return response.json()
