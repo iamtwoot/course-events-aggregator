@@ -78,7 +78,11 @@ async def test_get_events_page_responds_with_correct_params():
 async def test_get_free_seats_calls_client_with_correct_params():
     fake_response = Mock()
     fake_response.json.return_value = {
-        "seats": ["A1", "A2", "A3",]
+        "seats": [
+            "A1",
+            "A2",
+            "A3",
+        ]
     }
 
     fake_client = AsyncMock()
