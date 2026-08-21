@@ -1,4 +1,5 @@
 import asyncio
+import logging
 import uuid
 
 from sqlalchemy import delete
@@ -9,6 +10,8 @@ from src.models.ticket import Ticket
 
 _MAX_ATTEMPTS = 3
 _RETRY_DELAY_SECONDS = 0.5
+
+logger = logging.getLogger(__name__)
 
 
 class TicketRepository:
@@ -27,6 +30,13 @@ class TicketRepository:
             except DBAPIError:
                 await self._session.rollback()
                 if attempt == _MAX_ATTEMPTS:
+                    logger.error(
+                        "Failed to persist ticket %s for event %s after %d attempts; "
+                        "ticket exists at provider but is untracked locally",
+                        ticket_id,
+                        event_id,
+                        _MAX_ATTEMPTS,
+                    )
                     raise
                 await asyncio.sleep(_RETRY_DELAY_SECONDS * attempt)
 
@@ -41,5 +51,11 @@ class TicketRepository:
             except DBAPIError:
                 await self._session.rollback()
                 if attempt == _MAX_ATTEMPTS:
+                    logger.error(
+                        "Failed to delete ticket %s after %d attempts; "
+                        "ticket deleted at provider but exists locally",
+                        ticket_id,
+                        _MAX_ATTEMPTS,
+                    )
                     raise
                 await asyncio.sleep(_RETRY_DELAY_SECONDS * attempt)
