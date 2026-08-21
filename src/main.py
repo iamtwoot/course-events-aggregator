@@ -1,4 +1,5 @@
 import asyncio
+import logging
 from contextlib import asynccontextmanager
 
 import httpx
@@ -16,14 +17,15 @@ from .database import engine
 from .services.events_provider_client import EventsProviderClient
 from .services.sync import sync_events
 
+logger = logging.getLogger(__name__)
+
 
 async def sync_loop(client: EventsProviderClient):
     while True:
         try:
             await sync_events(client)
         except Exception:
-            # log exception
-            pass
+            logger.exception("Background sync failed")
         await asyncio.sleep(24 * 60 * 60)
 
 
