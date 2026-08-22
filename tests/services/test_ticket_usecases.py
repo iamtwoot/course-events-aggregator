@@ -136,7 +136,10 @@ async def test_do_raises_when_provider_seats_lookup_fails():
     )
 
     usecase = CreateTicketUsecase(
-        client=fake_client, events=fake_events, tickets=AsyncMock(), seats_cache=fake_seats_cache
+        client=fake_client,
+        events=fake_events,
+        tickets=AsyncMock(),
+        seats_cache=fake_seats_cache,
     )
 
     with pytest.raises(ProviderTemporarilyUnavailableError):
@@ -153,7 +156,10 @@ async def test_do_raises_when_seat_is_taken_according_to_cache():
     fake_seats_cache.get.return_value = ["A1", "A2"]
 
     usecase = CreateTicketUsecase(
-        client=AsyncMock(), events=fake_events, tickets=AsyncMock(), seats_cache=fake_seats_cache
+        client=AsyncMock(),
+        events=fake_events,
+        tickets=AsyncMock(),
+        seats_cache=fake_seats_cache,
     )
 
     with pytest.raises(SeatTakenError):
@@ -179,7 +185,10 @@ async def test_do_raises_seat_taken_when_provider_rejects_registration():
     )
 
     usecase = CreateTicketUsecase(
-        client=fake_client, events=fake_events, tickets=AsyncMock(), seats_cache=fake_seats_cache
+        client=fake_client,
+        events=fake_events,
+        tickets=AsyncMock(),
+        seats_cache=fake_seats_cache,
     )
 
     with pytest.raises(SeatTakenError) as exc_info:
@@ -206,7 +215,10 @@ async def test_do_reraises_when_provider_registration_fails_unexpectedly():
     )
 
     usecase = CreateTicketUsecase(
-        client=fake_client, events=fake_events, tickets=AsyncMock(), seats_cache=fake_seats_cache
+        client=fake_client,
+        events=fake_events,
+        tickets=AsyncMock(),
+        seats_cache=fake_seats_cache,
     )
 
     with pytest.raises(httpx.HTTPStatusError):
@@ -229,20 +241,27 @@ async def test_do_creates_ticket_on_success():
     fake_tickets = AsyncMock()
 
     usecase = CreateTicketUsecase(
-        client=fake_client, events=fake_events, tickets=fake_tickets, seats_cache=fake_seats_cache
+        client=fake_client,
+        events=fake_events,
+        tickets=fake_tickets,
+        seats_cache=fake_seats_cache,
     )
 
     result = await usecase.do(payload)
 
     assert result == fake_ticket_id
-    fake_tickets.create.assert_called_once_with(ticket_id=fake_ticket_id, event_id=fake_event.id)
+    fake_tickets.create.assert_called_once_with(
+        ticket_id=fake_ticket_id, event_id=fake_event.id
+    )
 
 
 async def test_cancel_raises_when_ticket_not_found():
     fake_tickets = AsyncMock()
     fake_tickets.get_by_ticket_id.return_value = None
 
-    usecase = CancelTicketUsecase(client=AsyncMock(), tickets=fake_tickets, seats_cache=Mock())
+    usecase = CancelTicketUsecase(
+        client=AsyncMock(), tickets=fake_tickets, seats_cache=Mock()
+    )
 
     with pytest.raises(TicketNotFoundError):
         await usecase.do(uuid.uuid4())
@@ -261,7 +280,9 @@ async def test_cancel_raises_when_provider_reports_ticket_not_found():
         "404", request=Mock(), response=fake_response
     )
 
-    usecase = CancelTicketUsecase(client=fake_client, tickets=fake_tickets, seats_cache=Mock())
+    usecase = CancelTicketUsecase(
+        client=fake_client, tickets=fake_tickets, seats_cache=Mock()
+    )
 
     with pytest.raises(TicketNotFoundError):
         await usecase.do(uuid.uuid4())
@@ -280,7 +301,9 @@ async def test_cancel_reraises_when_provider_fails_unexpectedly():
         "500", request=Mock(), response=fake_response
     )
 
-    usecase = CancelTicketUsecase(client=fake_client, tickets=fake_tickets, seats_cache=Mock())
+    usecase = CancelTicketUsecase(
+        client=fake_client, tickets=fake_tickets, seats_cache=Mock()
+    )
 
     with pytest.raises(httpx.HTTPStatusError):
         await usecase.do(uuid.uuid4())
