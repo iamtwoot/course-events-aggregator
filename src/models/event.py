@@ -5,6 +5,7 @@ from sqlalchemy import DateTime, Integer, String, Uuid
 from sqlalchemy.orm import Mapped, mapped_column
 
 from src.database import Base
+from src.models.enums import SyncStatus
 
 
 class Event(Base):
@@ -34,4 +35,4 @@ class SyncMeta(Base):
     last_changed_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), default=datetime(2000, 1, 1, tzinfo=timezone.utc)
     )
-    sync_status: Mapped[str] = mapped_column(String, default="never_run")
+    sync_status: Mapped[str] = mapped_column(String, default=SyncStatus.NEVER_RUN)
