@@ -4,11 +4,11 @@ from datetime import datetime, timezone
 
 import httpx
 
+from src.models.enums import EventStatus
 from src.models.event import Event
 from src.models.ticket import Ticket
 from src.schemas.ticket import TicketRegistration
 from src.services.seats_pattern import is_valid_seat
-from src.models.enums import EventStatus
 
 
 class EventNotFoundError(Exception):

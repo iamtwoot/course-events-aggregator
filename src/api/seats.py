@@ -6,11 +6,11 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from src.api.dependencies import get_events_provider_client
 from src.database import get_db
+from src.models.enums import EventStatus
 from src.repositories.event import EventRepository
 from src.schemas.seats import SeatsOut
 from src.services.events_provider_client import EventsProviderClient
 from src.services.seats_cache import seats_cache
-from src.models.enums import EventStatus
 
 router = APIRouter()
 

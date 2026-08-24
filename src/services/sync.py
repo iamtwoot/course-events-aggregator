@@ -1,5 +1,7 @@
 from datetime import datetime, timezone
 
+from src.models.enums import SyncStatus
+
 from ..database import async_session_factory
 from ..models.event import Event
 from ..repositories.event import EventRepository
@@ -7,7 +9,6 @@ from ..repositories.sync_meta import SyncMetaRepository
 from .events_paginator import EventsPaginator
 from .events_provider_client import EventsProviderClient
 from .events_provider_schemas import ProviderEvent
-from src.models.enums import SyncStatus
 
 
 def _parse_event(raw: dict) -> Event:
