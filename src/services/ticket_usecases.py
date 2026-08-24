@@ -8,6 +8,7 @@ from src.models.event import Event
 from src.models.ticket import Ticket
 from src.schemas.ticket import TicketRegistration
 from src.services.seats_pattern import is_valid_seat
+from src.models.enums import EventStatus
 
 
 class EventNotFoundError(Exception):
@@ -92,7 +93,7 @@ class CreateTicketUsecase:
         if event is None:
             raise EventNotFoundError
 
-        if event.status != "published":
+        if event.status != EventStatus.PUBLISHED:
             raise EventNotAvailableError("Event is not published")
 
         if event.registration_deadline < datetime.now(timezone.utc):

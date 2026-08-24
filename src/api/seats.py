@@ -10,6 +10,7 @@ from src.repositories.event import EventRepository
 from src.schemas.seats import SeatsOut
 from src.services.events_provider_client import EventsProviderClient
 from src.services.seats_cache import seats_cache
+from src.models.enums import EventStatus
 
 router = APIRouter()
 
@@ -26,7 +27,7 @@ async def list_free_seats(
     if event is None:
         raise HTTPException(status_code=404, detail="Event not found")
 
-    if event.status != "published":
+    if event.status != EventStatus.PUBLISHED:
         raise HTTPException(status_code=400, detail="Event is not published")
 
     seats = seats_cache.get(str(event.id))
