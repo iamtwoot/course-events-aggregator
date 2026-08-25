@@ -1,14 +1,15 @@
 import uuid
-from datetime import datetime
 from unittest.mock import AsyncMock, Mock
 
 import httpx
 import pytest
-from datetime import datetime, timedelta, timezone
 
-from src.services.ticket_usecases import ProviderTemporarilyUnavailableError
 from src.services.seats_usecases import GetFreeSeatsUsecase
-from src.services.ticket_usecases import EventNotFoundError, EventNotAvailableError
+from src.services.ticket_usecases import (
+    EventNotAvailableError,
+    EventNotFoundError,
+    ProviderTemporarilyUnavailableError,
+)
 
 
 def _make_fake_event(**overrides) -> Mock:
@@ -34,7 +35,7 @@ async def test_do_returns_seats_on_success():
     fake_client.get_free_seats.return_value = {"seats": fake_response_seats}
 
     usecase = GetFreeSeatsUsecase(
-        client = fake_client,
+        client=fake_client,
         events=fake_events,
         seats_cache=fake_seats_cache,
     )
@@ -42,7 +43,9 @@ async def test_do_returns_seats_on_success():
     result = await usecase.do(fake_event.id)
 
     assert result == fake_response_seats
-    fake_seats_cache.set.assert_called_once_with(str(fake_event.id), fake_response_seats)
+    fake_seats_cache.set.assert_called_once_with(
+        str(fake_event.id), fake_response_seats
+    )
 
 
 async def test_do_raises_when_event_not_found():

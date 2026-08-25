@@ -14,6 +14,8 @@ from src.schemas.event import (
     PlaceDetailOut,
     PlaceOut,
 )
+from src.services.events_usecases import GetEventUsecase, ListEventsUsecase
+from src.services.ticket_usecases import EventNotFoundError
 
 router = APIRouter()
 
@@ -43,10 +45,13 @@ async def list_events(
     page: int = Query(default=1, ge=1),
     page_size: int = Query(default=20, ge=1, le=100),
 ) -> PaginatedEventsResponse:
-    repo = EventRepository(session)
-    events, total = await repo.list(date_from=date_from, page=page, page_size=page_size)
+    usecase = ListEventsUsecase(events=EventRepository(session))
+    events, total, has_next = await usecase.do(
+        date_from=date_from,
+        page=page,
+        page_size=page_size,
+    )
 
-    has_next = page * page_size < total
     next_url = (
         str(
             request.url.include_query_params(
@@ -94,10 +99,11 @@ def _to_event_detail_out(event: Event) -> EventDetailOut:
 
 @router.get("/api/events/{event_id}")
 async def get_event(event_id: uuid.UUID, session: AsyncSession = Depends(get_db)):
-    repo = EventRepository(session)
-    event = await repo.get(event_id)
+    usecase = GetEventUsecase(events=EventRepository(session))
 
-    if event is None:
+    try:
+        event = await usecase.do(event_id)
+    except EventNotFoundError:
         raise HTTPException(status_code=404, detail="Event not found")
 
     return _to_event_detail_out(event)
