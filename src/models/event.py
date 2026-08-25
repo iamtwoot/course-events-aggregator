@@ -2,10 +2,11 @@ import uuid
 from datetime import datetime, timezone
 
 from sqlalchemy import DateTime, Integer, String, Uuid
+from sqlalchemy import Enum as SAEnum
 from sqlalchemy.orm import Mapped, mapped_column
 
 from src.database import Base
-from src.models.enums import SyncStatus
+from src.models.enums import SyncStatus, EventStatus
 
 
 class Event(Base):
@@ -20,7 +21,9 @@ class Event(Base):
     place_seats_pattern: Mapped[str | None] = mapped_column(String)
     event_time: Mapped[datetime] = mapped_column(DateTime(timezone=True))
     registration_deadline: Mapped[datetime] = mapped_column(DateTime(timezone=True))
-    status: Mapped[str] = mapped_column(String)
+    status: Mapped[EventStatus] = mapped_column(
+        SAEnum(EventStatus, native_enum=False),
+    )
     number_of_visitors: Mapped[int] = mapped_column(Integer, default=0)
 
     def __repr__(self) -> str:
