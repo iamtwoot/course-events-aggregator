@@ -6,7 +6,7 @@ from sqlalchemy import Enum as SAEnum
 from sqlalchemy.orm import Mapped, mapped_column
 
 from src.database import Base
-from src.models.enums import SyncStatus, EventStatus
+from src.models.enums import EventStatus, SyncStatus
 
 
 class Event(Base):
@@ -22,7 +22,11 @@ class Event(Base):
     event_time: Mapped[datetime] = mapped_column(DateTime(timezone=True))
     registration_deadline: Mapped[datetime] = mapped_column(DateTime(timezone=True))
     status: Mapped[EventStatus] = mapped_column(
-        SAEnum(EventStatus, native_enum=False, values_callable=lambda e: [x.value for x in e]),
+        SAEnum(
+            EventStatus,
+            native_enum=False,
+            values_callable=lambda e: [x.value for x in e],
+        ),
     )
     number_of_visitors: Mapped[int] = mapped_column(Integer, default=0)
 
