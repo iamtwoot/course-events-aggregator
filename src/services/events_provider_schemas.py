@@ -3,7 +3,7 @@ from uuid import UUID
 
 from pydantic import BaseModel
 
-from models.enums import EventStatus
+from src.models.enums import EventStatus
 
 
 def _to_event_status(raw_status: str) -> EventStatus:
