@@ -3,7 +3,7 @@ import uuid
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from src.services.seats_usecase import GetFreeSeatsUsecase
+from src.services.seats_usecases import GetFreeSeatsUsecase
 from src.services.ticket_usecases import (
     EventNotAvailableError,
     EventNotFoundError,

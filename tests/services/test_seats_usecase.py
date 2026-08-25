@@ -7,7 +7,7 @@ import pytest
 from datetime import datetime, timedelta, timezone
 
 from src.services.ticket_usecases import ProviderTemporarilyUnavailableError
-from src.services.seats_usecase import GetFreeSeatsUsecase
+from src.services.seats_usecases import GetFreeSeatsUsecase
 from src.services.ticket_usecases import EventNotFoundError, EventNotAvailableError
 
 
