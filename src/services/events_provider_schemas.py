@@ -3,6 +3,15 @@ from uuid import UUID
 
 from pydantic import BaseModel
 
+from models.enums import EventStatus
+
+
+def _to_event_status(raw_status: str) -> EventStatus:
+    try:
+        return EventStatus(raw_status)
+    except ValueError:
+        return EventStatus.UNKNOWN
+
 
 class ProviderPlace(BaseModel):
     id: UUID
@@ -33,6 +42,6 @@ class ProviderEvent(BaseModel):
             "place_seats_pattern": self.place.seats_pattern,
             "event_time": self.event_time,
             "registration_deadline": self.registration_deadline,
-            "status": self.status,
+            "status": _to_event_status(self.status),
             "number_of_visitors": self.number_of_visitors,
         }

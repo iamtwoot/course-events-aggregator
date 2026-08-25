@@ -2,6 +2,7 @@ import uuid
 from datetime import datetime
 
 from pydantic import BaseModel, Field
+from src.models.enums import EventStatus
 
 
 class PlaceOut(BaseModel):
@@ -17,7 +18,7 @@ class EventOut(BaseModel):
     place: PlaceOut = Field(..., description="Place")
     event_time: datetime = Field(..., description="Event time")
     registration_deadline: datetime = Field(..., description="Registration deadline")
-    status: str = Field(..., description="Status")
+    status: EventStatus = Field(..., description="Status")
     number_of_visitors: int = Field(..., description="Number of visitors")
 
 
