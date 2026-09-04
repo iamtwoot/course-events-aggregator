@@ -54,7 +54,7 @@ class EventRepositoryProto(typing.Protocol):
 class TicketRepositoryProto(typing.Protocol):
     async def get_by_ticket_id(self, ticket_id: uuid.UUID) -> Ticket | None: ...
 
-    async def create(self, ticket_id: uuid.UUID, event_id: uuid.UUID) -> None: ...
+    def add(self, ticket_id: uuid.UUID, event_id: uuid.UUID) -> None: ...
 
     async def delete_by_ticket_id(self, ticket_id: uuid.UUID) -> None: ...
 
@@ -65,6 +65,10 @@ class SeatsCacheProto(typing.Protocol):
     def set(self, event_id: str, seats: list[str]) -> None: ...
 
     def invalidate(self, event_id: str) -> None: ...
+
+
+class UnitOfWorkProto(typing.Protocol):
+    async def commit(self) -> None: ...
 
 
 def _extract_provider_detail(e: httpx.HTTPStatusError) -> str:
@@ -82,11 +86,13 @@ class CreateTicketUsecase:
         events: EventRepositoryProto,
         tickets: TicketRepositoryProto,
         seats_cache: SeatsCacheProto,
+        uow: UnitOfWorkProto,
     ):
         self._client = client
         self._events = events
         self._tickets = tickets
         self._seats_cache = seats_cache
+        self._uow = uow
 
     async def do(self, payload: TicketRegistration) -> uuid.UUID:
         event = await self._events.get(payload.event_id)
@@ -126,7 +132,8 @@ class CreateTicketUsecase:
         available_seats.remove(payload.seat)
         self._seats_cache.set(str(event.id), available_seats)
 
-        await self._tickets.create(ticket_id=ticket_id, event_id=event.id)
+        self._tickets.add(ticket_id=ticket_id, event_id=event.id)
+        await self._uow.commit()
         return ticket_id
 
 
@@ -136,10 +143,12 @@ class CancelTicketUsecase:
         client: EventsProviderClientProto,
         tickets: TicketRepositoryProto,
         seats_cache: SeatsCacheProto,
+        uow: UnitOfWorkProto,
     ):
         self._client = client
         self._tickets = tickets
         self._seats_cache = seats_cache
+        self._uow = uow
 
     async def do(self, ticket_id: uuid.UUID) -> None:
         ticket = await self._tickets.get_by_ticket_id(ticket_id)
@@ -155,5 +164,7 @@ class CancelTicketUsecase:
                 raise TicketNotFoundError from e
             raise
 
-        await self._tickets.delete_by_ticket_id(ticket_id)
         self._seats_cache.invalidate(str(event_id))
+
+        await self._tickets.delete_by_ticket_id(ticket_id)
+        await self._uow.commit()

@@ -35,6 +35,7 @@ async def register_ticket(
         events=EventRepository(session),
         tickets=TicketRepository(session),
         seats_cache=seats_cache,
+        uow=session,
     )
 
     try:
@@ -68,6 +69,7 @@ async def unregister_ticket(
         client=client,
         tickets=TicketRepository(session),
         seats_cache=seats_cache,
+        uow=session,
     )
 
     try:
