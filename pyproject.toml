@@ -16,6 +16,8 @@ dependencies = [
 
 [dependency-groups]
 dev = [
+    "mypy>=2.3.1",
+    "pre-commit>=4.6.2",
     "pytest>=9.1.1",
     "pytest-asyncio>=1.4.0",
     "ruff>=0.6.0",
@@ -26,6 +28,7 @@ package = false
 
 [tool.ruff]
 extend-exclude = ["src/migrations/versions"]
+force-exclude = true
 
 [tool.ruff.lint]
 select = ["E", "F", "I", "W"]
