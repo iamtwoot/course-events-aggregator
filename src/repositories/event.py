@@ -30,7 +30,7 @@ class EventRepository:
 
         query = query.offset((page - 1) * page_size).limit(page_size)
 
-        total = await self._session.scalar(count_query)
+        total = await self._session.scalar(count_query) or 0
         result = await self._session.execute(query)
         events = list(result.scalars().all())
 
