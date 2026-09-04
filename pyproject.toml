@@ -23,6 +23,9 @@ dev = [
     "ruff>=0.6.0",
 ]
 
+[tool.mypy]
+plugins = ["pydantic.mypy"]
+
 [tool.uv]
 package = false
 
