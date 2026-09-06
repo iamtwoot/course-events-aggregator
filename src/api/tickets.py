@@ -6,6 +6,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from src.api.dependencies import get_events_provider_client
 from src.database import get_db
 from src.repositories.event import EventRepository
+from src.repositories.outbox import OutboxRepository
 from src.repositories.ticket import TicketRepository
 from src.schemas.ticket import TicketCancelOut, TicketOut, TicketRegistration
 from src.services.events_provider_client import EventsProviderClient
@@ -36,6 +37,7 @@ async def register_ticket(
         tickets=TicketRepository(session),
         seats_cache=seats_cache,
         uow=session,
+        outbox=OutboxRepository(session),
     )
 
     try:

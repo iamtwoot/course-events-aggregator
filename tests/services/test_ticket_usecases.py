@@ -14,6 +14,7 @@ from src.services.ticket_usecases import (
     EventRepositoryProto,
     EventsProviderClientProto,
     InvalidSeatError,
+    OutboxRepositoryProto,
     ProviderTemporarilyUnavailableError,
     SeatsCacheProto,
     SeatTakenError,
@@ -64,6 +65,7 @@ async def test_do_raises_when_event_not_found():
         tickets=Mock(spec=TicketRepositoryProto),
         seats_cache=Mock(spec=SeatsCacheProto),
         uow=AsyncMock(spec=UnitOfWorkProto),
+        outbox=Mock(spec=OutboxRepositoryProto),
     )
 
     with pytest.raises(EventNotFoundError):
@@ -91,6 +93,7 @@ async def test_do_raises_when_status_not_published():
         tickets=Mock(spec=TicketRepositoryProto),
         seats_cache=Mock(spec=SeatsCacheProto),
         uow=AsyncMock(spec=UnitOfWorkProto),
+        outbox=Mock(spec=OutboxRepositoryProto),
     )
 
     with pytest.raises(EventNotAvailableError):
@@ -112,6 +115,7 @@ async def test_do_raises_when_registration_deadline_passed():
         tickets=Mock(spec=TicketRepositoryProto),
         seats_cache=Mock(spec=SeatsCacheProto),
         uow=AsyncMock(spec=UnitOfWorkProto),
+        outbox=Mock(spec=OutboxRepositoryProto),
     )
 
     with pytest.raises(EventNotAvailableError):
@@ -130,6 +134,7 @@ async def test_do_raises_when_seat_does_not_exist_in_pattern():
         tickets=Mock(spec=TicketRepositoryProto),
         seats_cache=Mock(spec=SeatsCacheProto),
         uow=AsyncMock(spec=UnitOfWorkProto),
+        outbox=Mock(spec=OutboxRepositoryProto),
     )
 
     with pytest.raises(InvalidSeatError):
@@ -156,6 +161,7 @@ async def test_do_raises_when_provider_seats_lookup_fails():
         tickets=Mock(spec=TicketRepositoryProto),
         seats_cache=fake_seats_cache,
         uow=AsyncMock(spec=UnitOfWorkProto),
+        outbox=Mock(spec=OutboxRepositoryProto),
     )
 
     with pytest.raises(ProviderTemporarilyUnavailableError):
@@ -177,6 +183,7 @@ async def test_do_raises_when_seat_is_taken_according_to_cache():
         tickets=Mock(spec=TicketRepositoryProto),
         seats_cache=fake_seats_cache,
         uow=AsyncMock(spec=UnitOfWorkProto),
+        outbox=Mock(spec=OutboxRepositoryProto),
     )
 
     with pytest.raises(SeatTakenError):
@@ -201,18 +208,22 @@ async def test_do_raises_seat_taken_when_provider_rejects_registration():
         "400", request=Mock(), response=fake_provider_response
     )
 
+    fake_outbox = Mock(spec=OutboxRepositoryProto)
+
     usecase = CreateTicketUsecase(
         client=fake_client,
         events=fake_events,
         tickets=Mock(spec=TicketRepositoryProto),
         seats_cache=fake_seats_cache,
         uow=AsyncMock(spec=UnitOfWorkProto),
+        outbox=fake_outbox,
     )
 
     with pytest.raises(SeatTakenError) as exc_info:
         await usecase.do(payload)
 
     assert exc_info.value.detail == "Seat already sold"
+    fake_outbox.add.assert_not_called()
 
 
 async def test_do_reraises_when_provider_registration_fails_unexpectedly():
@@ -232,21 +243,25 @@ async def test_do_reraises_when_provider_registration_fails_unexpectedly():
         "500", request=Mock(), response=fake_provider_response
     )
 
+    fake_outbox = Mock(spec=OutboxRepositoryProto)
+
     usecase = CreateTicketUsecase(
         client=fake_client,
         events=fake_events,
         tickets=Mock(spec=TicketRepositoryProto),
         seats_cache=fake_seats_cache,
         uow=AsyncMock(spec=UnitOfWorkProto),
+        outbox=fake_outbox,
     )
 
     with pytest.raises(httpx.HTTPStatusError):
         await usecase.do(payload)
+    fake_outbox.add.assert_not_called()
 
 
 async def test_do_creates_ticket_on_success():
     payload = _make_payload(seat="A15")
-    fake_event = _make_fake_event(id=payload.event_id)
+    fake_event = _make_fake_event(id=payload.event_id, name="fake_name")
     fake_events = AsyncMock(spec=EventRepositoryProto)
     fake_events.get.return_value = fake_event
 
@@ -261,12 +276,15 @@ async def test_do_creates_ticket_on_success():
 
     fake_uow = AsyncMock(spec=UnitOfWorkProto)
 
+    fake_outbox = Mock(spec=OutboxRepositoryProto)
+
     usecase = CreateTicketUsecase(
         client=fake_client,
         events=fake_events,
         tickets=fake_tickets,
         seats_cache=fake_seats_cache,
         uow=fake_uow,
+        outbox=fake_outbox,
     )
 
     result = await usecase.do(payload)
@@ -276,6 +294,10 @@ async def test_do_creates_ticket_on_success():
         ticket_id=fake_ticket_id, event_id=fake_event.id
     )
     fake_uow.commit.assert_awaited_once()
+    fake_outbox.add.assert_called_once_with(
+        event_type="ticket.purchased",
+        payload={"ticket_id": str(fake_ticket_id), "event_name": fake_event.name},
+    )
 
 
 async def test_cancel_raises_when_ticket_not_found():

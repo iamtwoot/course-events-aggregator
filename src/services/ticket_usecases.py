@@ -71,6 +71,10 @@ class UnitOfWorkProto(typing.Protocol):
     async def commit(self) -> None: ...
 
 
+class OutboxRepositoryProto(typing.Protocol):
+    def add(self, event_type: str, payload: dict) -> None: ...
+
+
 def _extract_provider_detail(e: httpx.HTTPStatusError) -> str:
     try:
         body = e.response.json()
@@ -87,12 +91,14 @@ class CreateTicketUsecase:
         tickets: TicketRepositoryProto,
         seats_cache: SeatsCacheProto,
         uow: UnitOfWorkProto,
+        outbox: OutboxRepositoryProto,
     ):
         self._client = client
         self._events = events
         self._tickets = tickets
         self._seats_cache = seats_cache
         self._uow = uow
+        self._outbox = outbox
 
     async def do(self, payload: TicketRegistration) -> uuid.UUID:
         event = await self._events.get(payload.event_id)
@@ -133,6 +139,10 @@ class CreateTicketUsecase:
         self._seats_cache.set(str(event.id), available_seats)
 
         self._tickets.add(ticket_id=ticket_id, event_id=event.id)
+        self._outbox.add(
+            event_type="ticket.purchased",
+            payload={"ticket_id": str(ticket_id), "event_name": event.name},
+        )
         await self._uow.commit()
         return ticket_id
 
