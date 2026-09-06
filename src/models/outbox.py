@@ -2,7 +2,7 @@ import enum
 import uuid
 from datetime import datetime
 
-from sqlalchemy import Index, String, func, text
+from sqlalchemy import DateTime, Index, String, func, text
 from sqlalchemy.dialects.postgresql import JSON
 from sqlalchemy.orm import Mapped, mapped_column
 
@@ -23,12 +23,14 @@ class OutboxRecord(Base):
     payload: Mapped[dict] = mapped_column(JSON)
     status: Mapped[str] = mapped_column(String(16), default=OutboxStatus.PENDING)
     attempts: Mapped[int] = mapped_column(default=0)
-    created_at: Mapped[datetime] = mapped_column(server_default=func.now())
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), server_default=func.now()
+    )
 
     __table_args__ = (
         Index(
             "ix_outbox_pending",
             "created_at",
-            postgresql_where=text("status = 'pending"),
+            postgresql_where=text("status = 'pending'"),
         ),
     )
