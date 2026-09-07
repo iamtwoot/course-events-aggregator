@@ -8,6 +8,7 @@ import httpx
 
 from src.models.enums import EventStatus
 from src.models.event import Event
+from src.models.idempotency import IdempotencyKey
 from src.models.ticket import Ticket
 from src.schemas.ticket import TicketRegistration
 from src.services.seats_pattern import is_valid_seat
@@ -36,6 +37,10 @@ class TicketNotFoundError(Exception):
 
 
 class ProviderTemporarilyUnavailableError(Exception):
+    pass
+
+
+class IdempotencyConflictError(Exception):
     pass
 
 
@@ -77,6 +82,12 @@ class OutboxRepositoryProto(typing.Protocol):
     def add(self, event_type: str, payload: dict) -> None: ...
 
 
+class IdempotencyRepositoryProto(typing.Protocol):
+    async def get(self, key: str) -> IdempotencyKey | None: ...
+
+    def add(self, key: str, request_hash: str, ticket_id: uuid.UUID) -> None: ...
+
+
 def _extract_provider_detail(e: httpx.HTTPStatusError) -> str:
     try:
         body = e.response.json()
@@ -100,6 +111,7 @@ class CreateTicketUsecase:
         seats_cache: SeatsCacheProto,
         uow: UnitOfWorkProto,
         outbox: OutboxRepositoryProto,
+        idempotency: IdempotencyRepositoryProto,
     ):
         self._client = client
         self._events = events
@@ -107,8 +119,18 @@ class CreateTicketUsecase:
         self._seats_cache = seats_cache
         self._uow = uow
         self._outbox = outbox
+        self._idempotency = idempotency
 
     async def do(self, payload: TicketRegistration) -> uuid.UUID:
+        request_hash = ""
+        if payload.idempotency_key:
+            request_hash = _request_hash(payload)
+            existing = await self._idempotency.get(payload.idempotency_key)
+            if existing:
+                if existing.request_hash != request_hash:
+                    raise IdempotencyConflictError
+                return existing.ticket_id
+
         event = await self._events.get(payload.event_id)
         if event is None:
             raise EventNotFoundError
@@ -151,6 +173,12 @@ class CreateTicketUsecase:
             event_type="ticket.purchased",
             payload={"ticket_id": str(ticket_id), "event_name": event.name},
         )
+        if payload.idempotency_key:
+            self._idempotency.add(
+                key=payload.idempotency_key,
+                request_hash=request_hash,
+                ticket_id=ticket_id,
+            )
         await self._uow.commit()
         return ticket_id
 

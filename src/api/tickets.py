@@ -6,6 +6,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from src.api.dependencies import get_events_provider_client
 from src.database import get_db
 from src.repositories.event import EventRepository
+from src.repositories.idempotency import IdempotencyRepository
 from src.repositories.outbox import OutboxRepository
 from src.repositories.ticket import TicketRepository
 from src.schemas.ticket import TicketCancelOut, TicketOut, TicketRegistration
@@ -16,6 +17,7 @@ from src.services.ticket_usecases import (
     CreateTicketUsecase,
     EventNotAvailableError,
     EventNotFoundError,
+    IdempotencyConflictError,
     InvalidSeatError,
     ProviderTemporarilyUnavailableError,
     SeatTakenError,
@@ -38,6 +40,7 @@ async def register_ticket(
         seats_cache=seats_cache,
         uow=session,
         outbox=OutboxRepository(session),
+        idempotency=IdempotencyRepository(session),
     )
 
     try:
@@ -56,6 +59,11 @@ async def register_ticket(
         raise HTTPException(
             status_code=409,
             detail="Event status changed since last sync, try again later",
+        )
+    except IdempotencyConflictError:
+        raise HTTPException(
+            status_code=409,
+            detail="Idempotency key was used with different request data",
         )
 
     return TicketOut(ticket_id=ticket_id)
