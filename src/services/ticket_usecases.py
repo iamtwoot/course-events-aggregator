@@ -1,3 +1,5 @@
+import hashlib
+import json
 import typing
 import uuid
 from datetime import datetime, timezone
@@ -81,6 +83,12 @@ def _extract_provider_detail(e: httpx.HTTPStatusError) -> str:
     except ValueError:
         return e.response.text
     return body.get("detail", body) if isinstance(body, dict) else body
+
+
+def _request_hash(payload: TicketRegistration) -> str:
+    data = payload.model_dump(mode="json", exclude={"idempotency_key"})
+    raw = json.dumps(data, sort_keys=True)
+    return hashlib.sha256(raw.encode()).hexdigest()
 
 
 class CreateTicketUsecase:

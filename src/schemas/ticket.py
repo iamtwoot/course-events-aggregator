@@ -9,6 +9,7 @@ class TicketRegistration(BaseModel):
     last_name: str = Field(..., description="Last name")
     email: EmailStr = Field(..., description="Email")
     seat: str = Field(..., description="Seat number")
+    idempotency_key: str | None = Field(default=None, max_length=255)
 
 
 class TicketOut(BaseModel):
