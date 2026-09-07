@@ -10,6 +10,9 @@ class Settings(BaseSettings):
     outbox_batch_size: int = 50
     outbox_max_attempts: int = 30
 
+    capashino_base_url: str
+    capashino_api_key: str
+
     model_config = SettingsConfigDict(env_file=".env")
 
     @property
