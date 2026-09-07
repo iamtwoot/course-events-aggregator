@@ -3,10 +3,7 @@ from collections.abc import Sequence
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from src.config import settings
 from src.models.outbox import OutboxRecord, OutboxStatus
-
-MAX_ATTEMPTS = settings.outbox_max_attempts
 
 
 class OutboxRepository:
@@ -28,7 +25,7 @@ class OutboxRepository:
     def mark_sent(self, record: OutboxRecord) -> None:
         record.status = OutboxStatus.SENT
 
-    def mark_failed(self, record: OutboxRecord) -> None:
+    def mark_failed(self, record: OutboxRecord, max_attempts: int) -> None:
         record.attempts += 1
-        if record.attempts >= MAX_ATTEMPTS:
+        if record.attempts >= max_attempts:
             record.status = OutboxStatus.FAILED
