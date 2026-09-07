@@ -31,7 +31,7 @@ async def process_outbox_batch(client: NotificationsClient) -> None:
         for record in records:
             try:
                 await _deliver(client, record)
-            except httpx.HTTPError:
+            except httpx.HTTPError as e:
                 repo.mark_failed(record, settings.outbox_max_attempts)
                 if record.status == OutboxStatus.FAILED:
                     logger.error(
@@ -40,7 +40,9 @@ async def process_outbox_batch(client: NotificationsClient) -> None:
                         record.id,
                     )
                 else:
-                    logger.warning("Outbox delivery failed, will retry: %s", record.id)
+                    logger.warning(
+                        "Outbox delivery failed, will retry: %s (%r)", record.id, e
+                    )
             else:
                 logger.info("Outbox record delivered: %s", record.id)
                 repo.mark_sent(record)
