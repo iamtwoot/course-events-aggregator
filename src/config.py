@@ -6,6 +6,10 @@ class Settings(BaseSettings):
     events_provider_base_url: str
     events_provider_api_key: str
 
+    outbox_poll_interval_seconds: int = 10
+    outbox_batch_size: int = 50
+    outbox_max_attempts: int = 30
+
     model_config = SettingsConfigDict(env_file=".env")
 
     @property
