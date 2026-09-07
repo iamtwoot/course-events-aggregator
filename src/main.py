@@ -1,4 +1,5 @@
 import asyncio
+import contextlib
 import logging
 from contextlib import asynccontextmanager
 
@@ -8,6 +9,9 @@ from fastapi.encoders import jsonable_encoder
 from fastapi.exceptions import RequestValidationError
 from fastapi.responses import JSONResponse
 from sqlalchemy import text
+
+from src.services.notifications_client import NotificationsClient
+from src.services.outbox_worker import process_outbox_batch
 
 from .api.events import router as events_router
 from .api.seats import router as seats_router
@@ -19,6 +23,11 @@ from .services.sync import sync_events
 
 logger = logging.getLogger(__name__)
 
+logging.basicConfig(
+    level=logging.INFO,
+    format="%(asctime)s %(levelname)s %(name)s %(message)s",
+)
+
 
 async def sync_loop(client: EventsProviderClient):
     while True:
@@ -27,6 +36,15 @@ async def sync_loop(client: EventsProviderClient):
         except Exception:
             logger.exception("Background sync failed")
         await asyncio.sleep(24 * 60 * 60)
+
+
+async def outbox_loop(client: NotificationsClient):
+    while True:
+        try:
+            await process_outbox_batch(client)
+        except Exception:
+            logger.exception("Outbox worker iteration failed")
+        await asyncio.sleep(settings.outbox_poll_interval_seconds)
 
 
 @asynccontextmanager
@@ -41,12 +59,25 @@ async def lifespan(app: FastAPI):
     )
     app.state.events_provider_client = EventsProviderClient(http_client)
 
+    notifications_http_client = httpx.AsyncClient(
+        base_url=settings.capashino_base_url,
+        headers={"X-API-Key": settings.capashino_api_key},
+    )
+    notifications_client = NotificationsClient(notifications_http_client)
+
     sync_task = asyncio.create_task(sync_loop(app.state.events_provider_client))
+    outbox_task = asyncio.create_task(outbox_loop(notifications_client))
 
     yield
 
     sync_task.cancel()
+    outbox_task.cancel()
+    for task in (sync_task, outbox_task):
+        with contextlib.suppress(asyncio.CancelledError):
+            await task
+
     await http_client.aclose()
+    await notifications_http_client.aclose()
     await engine.dispose()
 
 
