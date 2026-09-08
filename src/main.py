@@ -4,6 +4,7 @@ import logging
 from contextlib import asynccontextmanager
 
 import httpx
+import sentry_sdk
 from fastapi import FastAPI, Request
 from fastapi.encoders import jsonable_encoder
 from fastapi.exceptions import RequestValidationError
@@ -27,6 +28,12 @@ logging.basicConfig(
     level=logging.INFO,
     format="%(asctime)s %(levelname)s %(name)s %(message)s",
 )
+
+if settings.sentry_dsn:
+    sentry_sdk.init(
+        dsn=settings.sentry_dsn,
+        send_default_pii=False,
+    )
 
 
 async def sync_loop(client: EventsProviderClient):
@@ -106,3 +113,8 @@ async def health() -> dict:
 async def trigger_sync(request: Request):
     await sync_events(request.app.state.events_provider_client)
     return {"status": "ok"}
+
+
+@app.get("/api/debug/sentry")
+async def trigger_error():
+    raise RuntimeError("GlitchTip integration check")

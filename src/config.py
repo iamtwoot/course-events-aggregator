@@ -13,6 +13,8 @@ class Settings(BaseSettings):
     capashino_base_url: str
     capashino_api_key: str
 
+    sentry_dsn: str | None = None
+
     model_config = SettingsConfigDict(env_file=".env")
 
     @property

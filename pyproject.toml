@@ -10,6 +10,7 @@ dependencies = [
     "httpx>=0.28.1",
     "pydantic-settings>=2.15.0",
     "pydantic[email]>=2.13.4",
+    "sentry-sdk[fastapi]>=2.69.0",
     "sqlalchemy[asyncio]>=2.0.52",
     "uvicorn[standard]>=0.52.3",
 ]
