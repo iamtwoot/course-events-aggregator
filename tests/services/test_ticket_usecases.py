@@ -13,6 +13,8 @@ from src.services.ticket_usecases import (
     EventNotFoundError,
     EventRepositoryProto,
     EventsProviderClientProto,
+    IdempotencyConflictError,
+    IdempotencyRepositoryProto,
     InvalidSeatError,
     OutboxRepositoryProto,
     ProviderTemporarilyUnavailableError,
@@ -21,6 +23,7 @@ from src.services.ticket_usecases import (
     TicketNotFoundError,
     TicketRepositoryProto,
     UnitOfWorkProto,
+    _request_hash,
 )
 
 
@@ -66,6 +69,7 @@ async def test_do_raises_when_event_not_found():
         seats_cache=Mock(spec=SeatsCacheProto),
         uow=AsyncMock(spec=UnitOfWorkProto),
         outbox=Mock(spec=OutboxRepositoryProto),
+        idempotency=AsyncMock(spec=IdempotencyRepositoryProto),
     )
 
     with pytest.raises(EventNotFoundError):
@@ -94,6 +98,7 @@ async def test_do_raises_when_status_not_published():
         seats_cache=Mock(spec=SeatsCacheProto),
         uow=AsyncMock(spec=UnitOfWorkProto),
         outbox=Mock(spec=OutboxRepositoryProto),
+        idempotency=AsyncMock(spec=IdempotencyRepositoryProto),
     )
 
     with pytest.raises(EventNotAvailableError):
@@ -116,6 +121,7 @@ async def test_do_raises_when_registration_deadline_passed():
         seats_cache=Mock(spec=SeatsCacheProto),
         uow=AsyncMock(spec=UnitOfWorkProto),
         outbox=Mock(spec=OutboxRepositoryProto),
+        idempotency=AsyncMock(spec=IdempotencyRepositoryProto),
     )
 
     with pytest.raises(EventNotAvailableError):
@@ -135,6 +141,7 @@ async def test_do_raises_when_seat_does_not_exist_in_pattern():
         seats_cache=Mock(spec=SeatsCacheProto),
         uow=AsyncMock(spec=UnitOfWorkProto),
         outbox=Mock(spec=OutboxRepositoryProto),
+        idempotency=AsyncMock(spec=IdempotencyRepositoryProto),
     )
 
     with pytest.raises(InvalidSeatError):
@@ -162,6 +169,7 @@ async def test_do_raises_when_provider_seats_lookup_fails():
         seats_cache=fake_seats_cache,
         uow=AsyncMock(spec=UnitOfWorkProto),
         outbox=Mock(spec=OutboxRepositoryProto),
+        idempotency=AsyncMock(spec=IdempotencyRepositoryProto),
     )
 
     with pytest.raises(ProviderTemporarilyUnavailableError):
@@ -184,6 +192,7 @@ async def test_do_raises_when_seat_is_taken_according_to_cache():
         seats_cache=fake_seats_cache,
         uow=AsyncMock(spec=UnitOfWorkProto),
         outbox=Mock(spec=OutboxRepositoryProto),
+        idempotency=AsyncMock(spec=IdempotencyRepositoryProto),
     )
 
     with pytest.raises(SeatTakenError):
@@ -217,6 +226,7 @@ async def test_do_raises_seat_taken_when_provider_rejects_registration():
         seats_cache=fake_seats_cache,
         uow=AsyncMock(spec=UnitOfWorkProto),
         outbox=fake_outbox,
+        idempotency=AsyncMock(spec=IdempotencyRepositoryProto),
     )
 
     with pytest.raises(SeatTakenError) as exc_info:
@@ -252,6 +262,7 @@ async def test_do_reraises_when_provider_registration_fails_unexpectedly():
         seats_cache=fake_seats_cache,
         uow=AsyncMock(spec=UnitOfWorkProto),
         outbox=fake_outbox,
+        idempotency=AsyncMock(spec=IdempotencyRepositoryProto),
     )
 
     with pytest.raises(httpx.HTTPStatusError):
@@ -285,6 +296,7 @@ async def test_do_creates_ticket_on_success():
         seats_cache=fake_seats_cache,
         uow=fake_uow,
         outbox=fake_outbox,
+        idempotency=AsyncMock(spec=IdempotencyRepositoryProto),
     )
 
     result = await usecase.do(payload)
@@ -297,6 +309,111 @@ async def test_do_creates_ticket_on_success():
     fake_outbox.add.assert_called_once_with(
         event_type="ticket.purchased",
         payload={"ticket_id": str(fake_ticket_id), "event_name": fake_event.name},
+    )
+
+
+async def test_do_returns_saved_ticket_on_repeated_key():
+    payload = _make_payload(seat="A15", idempotency_key="K1")
+
+    fake_ticket_id = uuid.uuid4()
+    saved = Mock()
+    saved.request_hash = _request_hash(payload)
+    saved.ticket_id = fake_ticket_id
+
+    fake_idempotency = AsyncMock(spec=IdempotencyRepositoryProto)
+    fake_idempotency.get.return_value = saved
+
+    fake_client = AsyncMock(spec=EventsProviderClientProto)
+    fake_events = AsyncMock(spec=EventRepositoryProto)
+    fake_outbox = Mock(spec=OutboxRepositoryProto)
+    fake_ouw = AsyncMock(spec=UnitOfWorkProto)
+
+    usecase = CreateTicketUsecase(
+        client=fake_client,
+        events=fake_events,
+        tickets=Mock(spec=TicketRepositoryProto),
+        seats_cache=Mock(spec=SeatsCacheProto),
+        uow=fake_ouw,
+        outbox=fake_outbox,
+        idempotency=fake_idempotency,
+    )
+
+    result = await usecase.do(payload)
+
+    assert result == fake_ticket_id
+    fake_client.register.assert_not_awaited()
+    fake_events.get.assert_not_awaited()
+    fake_outbox.add.assert_not_called()
+    fake_ouw.commit.assert_not_awaited()
+
+
+async def test_do_raises_conflict_when_hash_differs():
+    payload = _make_payload(seat="A15", idempotency_key="K1")
+
+    saved = Mock()
+    saved.request_hash = "different_hash"
+    saved.ticket_id = uuid.uuid4()
+
+    fake_idempotency = AsyncMock(spec=IdempotencyRepositoryProto)
+    fake_idempotency.get.return_value = saved
+
+    fake_client = AsyncMock(spec=EventsProviderClientProto)
+    fake_outbox = Mock(spec=OutboxRepositoryProto)
+
+    fake_uow = AsyncMock(spec=UnitOfWorkProto)
+
+    usecase = CreateTicketUsecase(
+        client=fake_client,
+        events=AsyncMock(spec=EventRepositoryProto),
+        tickets=Mock(spec=TicketRepositoryProto),
+        seats_cache=Mock(spec=SeatsCacheProto),
+        uow=fake_uow,
+        outbox=fake_outbox,
+        idempotency=fake_idempotency,
+    )
+
+    with pytest.raises(IdempotencyConflictError):
+        await usecase.do(payload)
+
+    fake_client.register.assert_not_awaited()
+    fake_outbox.add.assert_not_called()
+    fake_uow.commit.assert_not_called()
+
+
+async def test_do_saves_idempotency_key_on_success():
+    payload = _make_payload(seat="A15", idempotency_key="K1")
+    fake_event = _make_fake_event(id=payload.event_id, name="fake_name")
+
+    fake_events = AsyncMock(spec=EventRepositoryProto)
+    fake_events.get.return_value = fake_event
+
+    fake_seats_cache = Mock(spec=SeatsCacheProto)
+    fake_seats_cache.get.return_value = ["A15", "A16"]
+
+    fake_ticket_id = uuid.uuid4()
+    fake_client = AsyncMock(spec=EventsProviderClientProto)
+    fake_client.register.return_value = fake_ticket_id
+
+    fake_idempotency = AsyncMock(spec=IdempotencyRepositoryProto)
+    fake_idempotency.get.return_value = None
+
+    usecase = CreateTicketUsecase(
+        client=fake_client,
+        events=fake_events,
+        tickets=Mock(spec=TicketRepositoryProto),
+        seats_cache=fake_seats_cache,
+        uow=AsyncMock(spec=UnitOfWorkProto),
+        outbox=Mock(spec=OutboxRepositoryProto),
+        idempotency=fake_idempotency,
+    )
+
+    result = await usecase.do(payload)
+
+    assert result == fake_ticket_id
+    fake_idempotency.add.assert_called_once_with(
+        key="K1",
+        request_hash=_request_hash(payload),
+        ticket_id=fake_ticket_id,
     )
 
 
