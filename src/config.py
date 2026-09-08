@@ -15,6 +15,9 @@ class Settings(BaseSettings):
 
     sentry_dsn: str | None = None
 
+    idempotency_key_ttl_days: int = 7
+    idempotency_cleanup_interval_seconds: int = 3600
+
     model_config = SettingsConfigDict(env_file=".env")
 
     @property

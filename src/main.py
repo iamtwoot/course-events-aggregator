@@ -11,6 +11,7 @@ from fastapi.exceptions import RequestValidationError
 from fastapi.responses import JSONResponse
 from sqlalchemy import text
 
+from src.services.idempotency_cleanup import cleanup_expired_idempotency_keys
 from src.services.notifications_client import NotificationsClient
 from src.services.outbox_worker import process_outbox_batch
 
@@ -54,6 +55,15 @@ async def outbox_loop(client: NotificationsClient):
         await asyncio.sleep(settings.outbox_poll_interval_seconds)
 
 
+async def idempotency_cleanup_loop():
+    while True:
+        try:
+            await cleanup_expired_idempotency_keys()
+        except Exception:
+            logger.exception("Idempotency cleanup failed")
+        await asyncio.sleep(settings.idempotency_cleanup_interval_seconds)
+
+
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     async with engine.connect() as conn:
@@ -74,12 +84,14 @@ async def lifespan(app: FastAPI):
 
     sync_task = asyncio.create_task(sync_loop(app.state.events_provider_client))
     outbox_task = asyncio.create_task(outbox_loop(notifications_client))
+    cleanup_task = asyncio.create_task(idempotency_cleanup_loop())
 
     yield
 
     sync_task.cancel()
     outbox_task.cancel()
-    for task in (sync_task, outbox_task):
+    cleanup_task.cancel()
+    for task in (sync_task, outbox_task, cleanup_task):
         with contextlib.suppress(asyncio.CancelledError):
             await task
 

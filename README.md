@@ -39,18 +39,19 @@ Swagger доступен на `http://localhost:8000/docs`.
 Конфигурация читается через `pydantic-settings` из переменных окружения или файла `.env`.
 Секретов в коде нет.
 
-| Переменная | Обязательна | По умолчанию | Описание |
-|---|---|---|---|
-| `POSTGRES_CONNECTION_STRING` | да | — | Строка подключения к PostgreSQL |
-| `EVENTS_PROVIDER_BASE_URL` | да | — | Базовый URL Events Provider |
-| `EVENTS_PROVIDER_API_KEY` | да | — | API-ключ Events Provider |
-| `CAPASHINO_BASE_URL` | да | — | Базовый URL Notification-сервиса |
-| `CAPASHINO_API_KEY` | да | — | API-ключ Capashino (заголовок `X-API-Key`) |
-| `SENTRY_DSN` | нет | не задан | DSN GlitchTip; без него отправка ошибок отключена |
-| `OUTBOX_POLL_INTERVAL_SECONDS` | нет | `10` | Пауза между итерациями outbox-воркера |
-| `OUTBOX_BATCH_SIZE` | нет | `50` | Сколько записей воркер берёт за одну итерацию |
-| `OUTBOX_MAX_ATTEMPTS` | нет | `30` | Попыток доставки до перевода записи в `failed` |
-
+| Переменная                             | Обязательна | По умолчанию | Описание                                                                   |
+|----------------------------------------|-------------|--------------|----------------------------------------------------------------------------|
+| `POSTGRES_CONNECTION_STRING`           | да          | —            | Строка подключения к PostgreSQL                                            |
+| `EVENTS_PROVIDER_BASE_URL`             | да          | —            | Базовый URL Events Provider                                                |
+| `EVENTS_PROVIDER_API_KEY`              | да          | —            | API-ключ Events Provider                                                   |
+| `CAPASHINO_BASE_URL`                   | да          | —            | Базовый URL Notification-сервиса                                           |
+| `CAPASHINO_API_KEY`                    | да          | —            | API-ключ Capashino (заголовок `X-API-Key`)                                 |
+| `SENTRY_DSN`                           | нет         | не задан     | DSN GlitchTip; без него отправка ошибок отключена                          |
+| `OUTBOX_POLL_INTERVAL_SECONDS`         | нет         | `10`         | Пауза между итерациями outbox-воркера                                      |
+| `OUTBOX_BATCH_SIZE`                    | нет         | `50`         | Сколько записей воркер берёт за одну итерацию                              |
+| `OUTBOX_MAX_ATTEMPTS`                  | нет         | `30`         | Попыток доставки до перевода записи в `failed`                             |
+| `IDEMPOTENCY_KEY_TTL_DAYS`             | нет         | `7`          | Количество дней, которое хранится idempotency key                          |
+| `IDEMPOTENCY_CLEANUP_INTERVAL_SECONDS` | нет         | `3600`       | Интервал работы фонового воркера по удалению просроченных idempotency keys | 
 
 ## Запуск фоновых процессов
 
@@ -123,15 +124,15 @@ Query-параметры: `date_from` (по умолчанию `2000-01-01`), `p
 
 Коды ошибок:
 
-| Код | `detail` | Причина |
-|---|---|---|
-| `400` | текст ошибки | Событие недоступно для регистрации |
-| `400` | `Seat does not exist for this venue` | Место не соответствует схеме зала |
-| `400` | текст ошибки | Место уже занято |
-| `404` | `Event not found` | Событие не найдено |
-| `409` | `Event status changed since last sync, try again later` | Статус события изменился с последней синхронизации |
-| `409` | `Idempotency key was used with different request data` | Ключ идемпотентности переиспользован с другими данными |
-| `422` | — | Тело запроса не прошло валидацию |
+| Код   | `detail`                                                | Причина                                                |
+|-------|---------------------------------------------------------|--------------------------------------------------------|
+| `400` | текст ошибки                                            | Событие недоступно для регистрации                     |
+| `400` | `Seat does not exist for this venue`                    | Место не соответствует схеме зала                      |
+| `400` | текст ошибки                                            | Место уже занято                                       |
+| `404` | `Event not found`                                       | Событие не найдено                                     |
+| `409` | `Event status changed since last sync, try again later` | Статус события изменился с последней синхронизации     |
+| `409` | `Idempotency key was used with different request data`  | Ключ идемпотентности переиспользован с другими данными |
+| `422` | —                                                       | Тело запроса не прошло валидацию                       |
 
 ### `DELETE /api/tickets/{ticket_id}`
 
