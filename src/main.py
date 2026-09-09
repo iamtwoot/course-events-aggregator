@@ -5,12 +5,14 @@ from contextlib import asynccontextmanager
 
 import httpx
 import sentry_sdk
-from fastapi import FastAPI, Request
+from fastapi import Depends, FastAPI, Request
 from fastapi.encoders import jsonable_encoder
 from fastapi.exceptions import RequestValidationError
 from fastapi.responses import JSONResponse
 from sqlalchemy import text
+from sqlalchemy.ext.asyncio import AsyncSession
 
+from src.repositories.sync_meta import SyncMetaRepository
 from src.services.idempotency_cleanup import cleanup_expired_idempotency_keys
 from src.services.notifications_client import NotificationsClient
 from src.services.outbox_worker import process_outbox_batch
@@ -19,7 +21,7 @@ from .api.events import router as events_router
 from .api.seats import router as seats_router
 from .api.tickets import router as tickets_router
 from .config import settings
-from .database import engine
+from .database import engine, get_db
 from .services.events_provider_client import EventsProviderClient
 from .services.sync import sync_events
 
@@ -125,3 +127,13 @@ async def health() -> dict:
 async def trigger_sync(request: Request):
     await sync_events(request.app.state.events_provider_client)
     return {"status": "ok"}
+
+
+@app.get("/api/sync/status")
+async def sync_status(session: AsyncSession = Depends(get_db)):
+    meta = await SyncMetaRepository(session).get()
+    return {
+        "status": meta.sync_status,
+        "last_sync_time": meta.last_sync_time,
+        "last_changed_at": meta.last_changed_at,
+    }

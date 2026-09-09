@@ -1,3 +1,4 @@
+import logging
 from datetime import datetime, timezone
 
 from src.models.enums import SyncStatus
@@ -10,6 +11,8 @@ from .events_paginator import EventsPaginator
 from .events_provider_client import EventsProviderClient
 from .events_provider_schemas import ProviderEvent
 
+logger = logging.getLogger(__name__)
+
 
 def _parse_event(raw: dict) -> Event:
     provider_event = ProviderEvent.model_validate(raw)
@@ -17,11 +20,21 @@ def _parse_event(raw: dict) -> Event:
 
 
 async def sync_events(client: EventsProviderClient):
+    try:
+        await _run_sync(client)
+    except Exception:
+        logger.exception("Failed to sync events")
+        await _mark_sync_failed()
+        raise
+
+
+async def _run_sync(client: EventsProviderClient) -> None:
     async with async_session_factory() as session:
         sync_meta_repo = SyncMetaRepository(session)
         event_repo = EventRepository(session)
 
         meta = await sync_meta_repo.get()
+
         changed_at_param = meta.last_changed_at.date().isoformat()
         latest_changed_at = meta.last_changed_at
 
@@ -38,4 +51,13 @@ async def sync_events(client: EventsProviderClient):
             sync_status=SyncStatus.OK,
         )
 
+        await session.commit()
+
+
+async def _mark_sync_failed():
+    async with async_session_factory() as session:
+        repo = SyncMetaRepository(session)
+        meta = await repo.get()
+        meta.sync_status = SyncStatus.ERROR
+        meta.last_sync_time = datetime.now(timezone.utc)
         await session.commit()
