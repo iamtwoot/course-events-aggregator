@@ -10,4 +10,4 @@ class EventStatus(str, enum.Enum):
 class SyncStatus(str, enum.Enum):
     NEVER_RUN = "never_run"
     OK = "ok"
-    ERROR = "error"
+    FAILED = "failed"

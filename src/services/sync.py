@@ -58,6 +58,6 @@ async def _mark_sync_failed():
     async with async_session_factory() as session:
         repo = SyncMetaRepository(session)
         meta = await repo.get()
-        meta.sync_status = SyncStatus.ERROR
+        meta.sync_status = SyncStatus.FAILED
         meta.last_sync_time = datetime.now(timezone.utc)
         await session.commit()
