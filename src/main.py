@@ -5,13 +5,15 @@ from contextlib import asynccontextmanager
 
 import httpx
 import sentry_sdk
-from fastapi import Depends, FastAPI, Request
+from fastapi import Depends, FastAPI, Request, Response
 from fastapi.encoders import jsonable_encoder
 from fastapi.exceptions import RequestValidationError
 from fastapi.responses import JSONResponse
+from prometheus_client import CONTENT_TYPE_LATEST, REGISTRY, generate_latest
 from sqlalchemy import text
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from src.middleware import MetricsMiddleware
 from src.repositories.sync_meta import SyncMetaRepository
 from src.services.idempotency_cleanup import cleanup_expired_idempotency_keys
 from src.services.notifications_client import NotificationsClient
@@ -113,6 +115,8 @@ async def validation_exception_handler(request: Request, exc: RequestValidationE
     )
 
 
+app.add_middleware(MetricsMiddleware)
+
 app.include_router(events_router)
 app.include_router(seats_router)
 app.include_router(tickets_router)
@@ -137,3 +141,8 @@ async def sync_status(session: AsyncSession = Depends(get_db)):
         "last_sync_time": meta.last_sync_time,
         "last_changed_at": meta.last_changed_at,
     }
+
+
+@app.get("/metrics")
+async def metrics() -> Response:
+    return Response(generate_latest(REGISTRY), media_type=CONTENT_TYPE_LATEST)
