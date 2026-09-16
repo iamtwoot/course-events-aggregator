@@ -8,7 +8,8 @@ import sentry_sdk
 from fastapi import Depends, FastAPI, Request
 from fastapi.encoders import jsonable_encoder
 from fastapi.exceptions import RequestValidationError
-from fastapi.responses import JSONResponse
+from fastapi.responses import JSONResponse, Response
+from prometheus_client import CONTENT_TYPE_LATEST, generate_latest
 from sqlalchemy import text
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -137,3 +138,8 @@ async def sync_status(session: AsyncSession = Depends(get_db)):
         "last_sync_time": meta.last_sync_time,
         "last_changed_at": meta.last_changed_at,
     }
+
+
+@app.get("/metrics")
+async def metrics() -> Response:
+    return Response(generate_latest(), media_type=CONTENT_TYPE_LATEST)
