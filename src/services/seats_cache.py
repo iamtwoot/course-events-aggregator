@@ -17,7 +17,7 @@ class SeatsCache:
 
         cached_at, seats = entry
         if time.monotonic() - cached_at > self._ttl:
-            cache_hits_total.inc()
+            cache_misses_total.inc()
             return None
 
         cache_hits_total.inc()
