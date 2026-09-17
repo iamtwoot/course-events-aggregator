@@ -504,3 +504,33 @@ async def test_cancel_sets_ticket_cancelled_and_invalidates_cache_on_success():
 
     fake_tickets.set_cancelled.assert_called_once_with(fake_ticket_id)
     fake_seats_cache.invalidate.assert_called_once_with(str(fake_event_id))
+
+
+async def test_do_raises_provider_unavailable_on_transport_error():
+    payload = _make_payload(seat="A15")
+    fake_event = _make_fake_event(id=payload.event_id)
+    fake_events = AsyncMock(spec=EventRepositoryProto)
+    fake_events.get.return_value = fake_event
+
+    fake_seats_cache = Mock(spec=SeatsCacheProto)
+    fake_seats_cache.get.return_value = ["A15"]
+
+    fake_client = AsyncMock(spec=EventsProviderClientProto)
+    fake_client.register.side_effect = httpx.ConnectTimeout("timeout")
+
+    fake_outbox = Mock(spec=OutboxRepositoryProto)
+
+    usecase = CreateTicketUsecase(
+        client=fake_client,
+        events=fake_events,
+        tickets=Mock(spec=TicketRepositoryProto),
+        seats_cache=fake_seats_cache,
+        uow=AsyncMock(spec=UnitOfWorkProto),
+        outbox=fake_outbox,
+        idempotency=AsyncMock(spec=IdempotencyRepositoryProto),
+    )
+
+    with pytest.raises(ProviderTemporarilyUnavailableError):
+        await usecase.do(payload)
+
+    fake_outbox.add.assert_not_called()
