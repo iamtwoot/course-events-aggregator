@@ -12,7 +12,7 @@ async def test_paginator_gets_empty_result():
     }
 
     fake_client = AsyncMock()
-    fake_client.get.return_value = fake_response
+    fake_client.request.return_value = fake_response
 
     client = EventsProviderClient(fake_client)
     paginator = EventsPaginator(client, changed_at="2000-01-01")
@@ -39,7 +39,7 @@ async def test_paginator_returns_events():
     fake_response2.json.return_value = {"results": [event2], "next": None}
 
     fake_client = AsyncMock()
-    fake_client.get.side_effect = [fake_response1, fake_response2]
+    fake_client.request.side_effect = [fake_response1, fake_response2]
 
     client = EventsProviderClient(fake_client)
     paginator = EventsPaginator(client, changed_at="2000-01-01")

@@ -21,13 +21,14 @@ async def test_get_events_calls_client_with_correct_params():
     }
 
     fake_client = AsyncMock()
-    fake_client.get.return_value = fake_response
+    fake_client.request.return_value = fake_response
 
     client = EventsProviderClient(fake_client)
 
     result = await client.get_events("2000-01-01")
 
-    fake_client.get.assert_called_once_with(
+    fake_client.request.assert_called_once_with(
+        "GET",
         "/api/events/",
         params={"changed_at": "2000-01-01"},
     )
@@ -43,7 +44,7 @@ async def test_get_events_raises_when_response_has_error_status():
     )
 
     fake_client = AsyncMock()
-    fake_client.get.return_value = fake_response
+    fake_client.request.return_value = fake_response
 
     client = EventsProviderClient(fake_client)
 
@@ -64,13 +65,14 @@ async def test_get_events_page_responds_with_correct_params():
     }
 
     fake_client = AsyncMock()
-    fake_client.get.return_value = fake_response
+    fake_client.request.return_value = fake_response
 
     client = EventsProviderClient(fake_client)
 
     result = await client.get_events_page("http://example.com/api/events/?cursor=abc")
 
-    fake_client.get.assert_called_once_with(
+    fake_client.request.assert_called_once_with(
+        "GET",
         "http://example.com/api/events/?cursor=abc",
     )
     assert result == fake_response.json.return_value
@@ -87,14 +89,14 @@ async def test_get_free_seats_calls_client_with_correct_params():
     }
 
     fake_client = AsyncMock()
-    fake_client.get.return_value = fake_response
+    fake_client.request.return_value = fake_response
 
     client = EventsProviderClient(fake_client)
 
     event_id = uuid.UUID("f7479ff1-0d79-4933-a32f-5d7f76fe672d")
     result = await client.get_free_seats(event_id)
 
-    fake_client.get.assert_called_once_with(f"/api/events/{event_id}/seats/")
+    fake_client.request.assert_called_once_with("GET", f"/api/events/{event_id}/seats/")
     assert result == fake_response.json.return_value
 
 
@@ -112,14 +114,15 @@ async def test_register_calls_client_with_correct_params():
     fake_response.json.return_value = {"ticket_id": str(fake_ticket_id)}
 
     fake_client = AsyncMock()
-    fake_client.post.return_value = fake_response
+    fake_client.request.return_value = fake_response
 
     client = EventsProviderClient(fake_client)
 
     event_id = uuid.uuid4()
     result = await client.register(event_id, payload)
 
-    fake_client.post.assert_called_once_with(
+    fake_client.request.assert_called_once_with(
+        "POST",
         f"/api/events/{event_id}/register/",
         json={
             "first_name": payload.first_name,
