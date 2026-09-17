@@ -38,3 +38,6 @@ class EventRepository:
 
     async def get(self, event_id: uuid.UUID) -> Event | None:
         return await self._session.get(Event, event_id)
+
+    async def count(self) -> int:
+        return await self._session.scalar(select(func.count()).select_from(Event)) or 0

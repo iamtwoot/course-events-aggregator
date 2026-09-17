@@ -6,7 +6,7 @@ from datetime import datetime, timezone
 
 import httpx
 
-from src.models.enums import EventStatus
+from src.models.enums import EventStatus, TicketStatus
 from src.models.event import Event
 from src.models.idempotency import IdempotencyKey
 from src.models.ticket import Ticket
@@ -63,7 +63,7 @@ class TicketRepositoryProto(typing.Protocol):
 
     def add(self, ticket_id: uuid.UUID, event_id: uuid.UUID) -> None: ...
 
-    async def delete_by_ticket_id(self, ticket_id: uuid.UUID) -> None: ...
+    async def set_cancelled(self, ticket_id: uuid.UUID) -> None: ...
 
 
 class SeatsCacheProto(typing.Protocol):
@@ -198,7 +198,7 @@ class CancelTicketUsecase:
 
     async def do(self, ticket_id: uuid.UUID) -> None:
         ticket = await self._tickets.get_by_ticket_id(ticket_id)
-        if ticket is None:
+        if ticket is None or ticket.status == TicketStatus.CANCELED:
             raise TicketNotFoundError
 
         event_id = ticket.event_id
@@ -212,5 +212,5 @@ class CancelTicketUsecase:
 
         self._seats_cache.invalidate(str(event_id))
 
-        await self._tickets.delete_by_ticket_id(ticket_id)
+        await self._tickets.set_cancelled(ticket_id)
         await self._uow.commit()
