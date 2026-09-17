@@ -4,7 +4,7 @@ import uuid
 import httpx
 
 from src.metrics import (
-    events_provider_requests_duration_seconds,
+    events_provider_request_duration_seconds,
     events_provider_requests_total,
 )
 from src.schemas.ticket import TicketRegistration
@@ -32,7 +32,7 @@ class EventsProviderClient:
             ).inc()
             raise
         finally:
-            events_provider_requests_duration_seconds.labels(
+            events_provider_request_duration_seconds.labels(
                 endpoint=endpoint,
             ).observe(time.monotonic() - start_time)
 

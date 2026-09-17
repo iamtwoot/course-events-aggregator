@@ -19,7 +19,7 @@ events_provider_requests_total = Counter(
     ["endpoint", "status"],
 )
 
-events_provider_requests_duration_seconds = Histogram(
+events_provider_request_duration_seconds = Histogram(
     "events_provider_requests_duration_seconds",
     "Events Provider API request duration",
     ["endpoint"],
