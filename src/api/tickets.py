@@ -57,8 +57,8 @@ async def register_ticket(
         raise HTTPException(status_code=400, detail=str(e))
     except ProviderTemporarilyUnavailableError:
         raise HTTPException(
-            status_code=409,
-            detail="Event status changed since last sync, try again later",
+            status_code=503,
+            detail="Events Provider is temporarily unavailable, try again later",
         )
     except IdempotencyConflictError:
         raise HTTPException(
@@ -88,8 +88,8 @@ async def unregister_ticket(
         raise HTTPException(status_code=404, detail="Ticket not found")
     except ProviderTemporarilyUnavailableError:
         raise HTTPException(
-            status_code=409,
-            detail="Event status changed since last sync, try again later",
+            status_code=503,
+            detail="Events Provider is temporarily unavailable, try again later",
         )
 
     return TicketCancelOut(success=True)
