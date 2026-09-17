@@ -200,7 +200,7 @@ class CancelTicketUsecase:
 
     async def do(self, ticket_id: uuid.UUID) -> None:
         ticket = await self._tickets.get_by_ticket_id(ticket_id)
-        if ticket is None or ticket.status == TicketStatus.CANCELED:
+        if ticket is None or ticket.status == TicketStatus.CANCELLED:
             raise TicketNotFoundError
 
         event_id = ticket.event_id

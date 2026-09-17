@@ -15,4 +15,4 @@ class SyncStatus(str, enum.Enum):
 
 class TicketStatus(str, enum.Enum):
     ACTIVE = "active"
-    CANCELED = "canceled"
+    CANCELLED = "cancelled"

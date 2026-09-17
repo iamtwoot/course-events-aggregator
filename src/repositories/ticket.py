@@ -21,7 +21,7 @@ class TicketRepository:
         await self._session.execute(
             update(Ticket)
             .where(Ticket.ticket_id == ticket_id)
-            .values(status=TicketStatus.CANCELED)
+            .values(status=TicketStatus.CANCELLED)
         )
 
     async def count(self) -> int:
@@ -32,7 +32,7 @@ class TicketRepository:
             await self._session.scalar(
                 select(func.count())
                 .select_from(Ticket)
-                .where(Ticket.status == TicketStatus.CANCELED)
+                .where(Ticket.status == TicketStatus.CANCELLED)
             )
             or 0
         )
