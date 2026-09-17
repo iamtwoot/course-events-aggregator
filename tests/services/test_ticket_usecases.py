@@ -5,6 +5,7 @@ from unittest.mock import AsyncMock, Mock
 import httpx
 import pytest
 
+from src.models.enums import TicketStatus
 from src.schemas.ticket import TicketRegistration
 from src.services.ticket_usecases import (
     CancelTicketUsecase,
@@ -480,12 +481,13 @@ async def test_cancel_reraises_when_provider_fails_unexpectedly():
         await usecase.do(uuid.uuid4())
 
 
-async def test_cancel_deletes_ticket_and_invalidates_cache_on_success():
+async def test_cancel_sets_ticket_cancelled_and_invalidates_cache_on_success():
     fake_event_id = uuid.uuid4()
     fake_ticket_id = uuid.uuid4()
 
     fake_ticket = Mock()
     fake_ticket.event_id = fake_event_id
+    fake_ticket.status = TicketStatus.ACTIVE
     fake_tickets = AsyncMock(spec=TicketRepositoryProto)
     fake_tickets.get_by_ticket_id.return_value = fake_ticket
 
@@ -500,5 +502,5 @@ async def test_cancel_deletes_ticket_and_invalidates_cache_on_success():
 
     await usecase.do(fake_ticket_id)
 
-    fake_tickets.delete_by_ticket_id.assert_called_once_with(fake_ticket_id)
+    fake_tickets.set_cancelled.assert_called_once_with(fake_ticket_id)
     fake_seats_cache.invalidate.assert_called_once_with(str(fake_event_id))
