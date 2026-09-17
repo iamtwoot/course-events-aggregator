@@ -11,3 +11,8 @@ class SyncStatus(str, enum.Enum):
     NEVER_RUN = "never_run"
     OK = "ok"
     FAILED = "failed"
+
+
+class TicketStatus(str, enum.Enum):
+    ACTIVE = "active"
+    CANCELED = "canceled"
