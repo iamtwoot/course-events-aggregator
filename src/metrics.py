@@ -33,3 +33,6 @@ tickets_created_total = Gauge(
 tickets_cancelled_total = Gauge(
     "tickets_cancelled_total", "Total number of cancelled tickets in database"
 )
+
+cache_hits_total = Counter("cache_hits_total", "Seats cache hits")
+cache_misses_total = Counter("cache_misses_total", "Seats cache misses")

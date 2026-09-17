@@ -1,5 +1,7 @@
 import time
 
+from src.metrics import cache_hits_total, cache_misses_total
+
 
 class SeatsCache:
     def __init__(self, ttl_seconds: int = 30):
@@ -10,12 +12,15 @@ class SeatsCache:
         entry = self._store.get(event_id)
 
         if entry is None:
+            cache_misses_total.inc()
             return None
 
         cached_at, seats = entry
         if time.monotonic() - cached_at > self._ttl:
+            cache_hits_total.inc()
             return None
 
+        cache_hits_total.inc()
         return seats
 
     def set(self, event_id: str, seats: list[str]) -> None:
