@@ -13,8 +13,11 @@ from prometheus_client import CONTENT_TYPE_LATEST, REGISTRY, generate_latest
 from sqlalchemy import text
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from src.metrics import events_total, tickets_cancelled_total, tickets_created_total
 from src.middleware import MetricsMiddleware
+from src.repositories.event import EventRepository
 from src.repositories.sync_meta import SyncMetaRepository
+from src.repositories.ticket import TicketRepository
 from src.services.idempotency_cleanup import cleanup_expired_idempotency_keys
 from src.services.notifications_client import NotificationsClient
 from src.services.outbox_worker import process_outbox_batch
@@ -144,5 +147,12 @@ async def sync_status(session: AsyncSession = Depends(get_db)):
 
 
 @app.get("/metrics")
-async def metrics() -> Response:
+async def metrics(session: AsyncSession = Depends(get_db)) -> Response:
+    tickets = TicketRepository(session)
+    events = EventRepository(session)
+
+    events_total.set(await events.count())
+    tickets_created_total.set(await tickets.count())
+    tickets_cancelled_total.set(await tickets.count_cancelled())
+
     return Response(generate_latest(REGISTRY), media_type=CONTENT_TYPE_LATEST)
