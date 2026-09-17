@@ -86,5 +86,10 @@ async def unregister_ticket(
         await usecase.do(ticket_id)
     except TicketNotFoundError:
         raise HTTPException(status_code=404, detail="Ticket not found")
+    except ProviderTemporarilyUnavailableError:
+        raise HTTPException(
+            status_code=409,
+            detail="Event status changed since last sync, try again later",
+        )
 
     return TicketCancelOut(success=True)

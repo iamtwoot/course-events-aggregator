@@ -48,7 +48,7 @@ class GetFreeSeatsUsecase:
         if seats is None:
             try:
                 raw = await self._client.get_free_seats(event.id)
-            except httpx.HTTPStatusError as e:
+            except httpx.HTTPError as e:
                 raise ProviderTemporarilyUnavailableError from e
             seats = raw["seats"]
             self._seats_cache.set(str(event.id), seats)

@@ -150,7 +150,7 @@ class CreateTicketUsecase:
         if available_seats is None:
             try:
                 raw = await self._client.get_free_seats(event.id)
-            except httpx.HTTPStatusError as e:
+            except httpx.HTTPError as e:
                 raise ProviderTemporarilyUnavailableError from e
             available_seats = raw["seats"]
             self._seats_cache.set(str(event.id), available_seats)
@@ -164,6 +164,8 @@ class CreateTicketUsecase:
             if e.response.status_code == 400:
                 raise SeatTakenError(_extract_provider_detail(e)) from e
             raise
+        except httpx.HTTPError as e:
+            raise ProviderTemporarilyUnavailableError from e
 
         available_seats.remove(payload.seat)
         self._seats_cache.set(str(event.id), available_seats)
@@ -209,6 +211,8 @@ class CancelTicketUsecase:
             if e.response.status_code == 404:
                 raise TicketNotFoundError from e
             raise
+        except httpx.HTTPError as e:
+            raise ProviderTemporarilyUnavailableError from e
 
         self._seats_cache.invalidate(str(event_id))
 
